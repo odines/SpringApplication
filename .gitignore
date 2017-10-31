@@ -28,3 +28,4 @@ hs_err_pid*
 build/resources/
 build/tmp/
 out/production/resources/
+war/testrest.war.original
