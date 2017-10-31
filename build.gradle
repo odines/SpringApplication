@@ -1,0 +1,48 @@
+version '1.0-SNAPSHOT'
+
+apply plugin: 'java'
+apply plugin: 'war'
+apply plugin: 'idea'
+apply plugin: 'org.springframework.boot'
+
+jar {
+    baseName = 'gs-rest-service'
+    version =  null
+}
+
+war {
+    baseName = 'testrest'
+    version = null
+    destinationDir = file('war')
+}
+
+repositories {
+    mavenCentral()
+}
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:1.5.8.RELEASE")
+    }
+}
+
+dependencies {
+    compile("org.springframework.boot:spring-boot-starter-web")
+    compile 'org.springframework.boot:spring-boot-starter-security'
+    compile 'org.springframework.boot:spring-boot-starter-tomcat'
+    compile group: 'org.apache.tomcat.embed', name: 'tomcat-embed-jasper', version: '9.0.1'
+    //REST
+    compile "javax.ws.rs:jsr311-api:1.1"
+    compile "javax.servlet:javax.servlet-api:3.1.0"
+    compile "com.sun.jersey:jersey-core:1.9.1"
+    compile "com.sun.jersey:jersey-server:1.9.1"
+    compile "com.sun.jersey:jersey-client:1.9.1"
+    compile "com.sun.jersey:jersey-json:1.9.1"
+    compile "com.sun.jersey.contribs:jersey-contribs:1.19"
+    compile group: 'javax.servlet', name: 'jstl', version: '1.2'
+}
