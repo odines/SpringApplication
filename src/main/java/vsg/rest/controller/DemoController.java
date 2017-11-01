@@ -24,7 +24,6 @@ public class DemoController {
 	@RequestMapping("/helloWorld")
 	private HelloWorldMessage sayHello(HttpServletRequest request) {
 		HelloWorldMessage message = new HelloWorldMessage("ololo");
-		message.addMessage();
 		return message;
 	}
 
