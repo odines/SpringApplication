@@ -16,9 +16,9 @@ public class AspectSample {
 
 	public static final Logger LOGGER = LoggerFactory.getLogger(AspectSample.class);
 
-	@Before(value = "execution(* vsg.rest.service.SampleService.createSample(java.lang.String))&&args(sampleName)")
-	public void logBefore(JoinPoint joinPoint, String sampleName) {
-		LOGGER.info("SampleAspect ->" + joinPoint.toShortString() + "\nsampleName = " + sampleName);
+	@Before(value = "execution(* vsg.rest.service.AuthService.authenticateRequest(..))")
+	public void logBefore(JoinPoint joinPoint) {
+		LOGGER.info("SampleAspect ->" + joinPoint.toShortString());
 		LOGGER.info("******");
 	}
 }

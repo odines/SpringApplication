@@ -9,8 +9,6 @@ import vsg.model.Sample;
 import vsg.rest.msg.HelloWorldMessage;
 import vsg.rest.service.SampleService;
 
-import javax.servlet.http.HttpServletRequest;
-
 /**
  * Created by Denis Orlov.
  */
@@ -20,12 +18,6 @@ public class DemoController {
 	private static final String TEMPLATE = "Hello %s!";
 	@Autowired
 	private SampleService sampleService;
-
-	@RequestMapping("/helloWorld")
-	private HelloWorldMessage sayHello(HttpServletRequest request) {
-		HelloWorldMessage message = new HelloWorldMessage("ololo");
-		return message;
-	}
 
 	@RequestMapping("/sample")
 	public Sample sample(String sampleName) {
@@ -40,7 +32,7 @@ public class DemoController {
 	@RequestMapping("/")
 	public ModelAndView testModel() {
 		ModelAndView view = new ModelAndView();
-		view.setViewName("test");
+		view.setViewName("index");
 		view.addObject("message", "HelloWorld");
 		view.addObject("msg", "Hello msg");
 		return view;
