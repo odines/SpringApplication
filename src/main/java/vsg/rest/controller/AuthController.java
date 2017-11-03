@@ -26,7 +26,6 @@ public class AuthController {
 		return authenticationService.authenticateRequest();
 	}
 
-
 	@RequestMapping("/secure-sample/helloWorld")
 	@PreAuthorize("hasRole('SECURE_USER')")
 	public String saySecureHello() {
