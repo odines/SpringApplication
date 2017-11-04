@@ -22,6 +22,18 @@ function reGetAuthToken() {
 	});
 }
 
+function getCollections() {
+	$.ajax({
+		type: "GET",
+		dataType: "json",
+		url: "/get_collections",
+		success: function (result) {
+			alert("Success!")
+		}
+
+	});
+}
+
 function processAuthTokenResult(result) {
 	if (true == result) {
 		$("#auth_panel").removeClass("panel-default").addClass("panel-success")

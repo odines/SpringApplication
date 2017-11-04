@@ -30,6 +30,12 @@
 				<a href="/export_asset" class="card-link">Export products</a>
 			</div>
 		</div>
+		<div class="panel panel-default">
+			<div class="panel-heading">List Collections</div>
+			<div class="panel-body">
+				<a href="#" onclick="getCollections()" class="nav-link">Get Collections</a>
+			</div>
+		</div>
 	</div>
 </div>
 <script src="../js/jquery-3.2.1.min.js"></script>

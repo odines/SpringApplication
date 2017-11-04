@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
+import vsg.model.CollectionsResponseBean;
 import vsg.rest.service.ExportAssetsService;
 
 import javax.servlet.http.HttpServletResponse;
@@ -46,6 +47,11 @@ public class ExportAssetsController {
 			response.setStatus(HttpServletResponse.SC_NO_CONTENT);
 		}
 	}
+	@RequestMapping(value = "/get_collections")
+	public String getListCollections() {
+		return exportAssetsService.getCollections();
+	}
+
 
 
 }
