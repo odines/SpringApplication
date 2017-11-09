@@ -16,6 +16,8 @@
 		An error occured. Unable to process request.
 	</div>
 
+	<p><h2 align="center">Export Assets Demo</h2></p>
+
 	<div class="panel-group">
 		<div class="panel panel-default" id="auth_panel">
 			<div class="panel-heading">Get auth_token</div>
