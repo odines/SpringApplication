@@ -30,10 +30,10 @@
 				<a href="/export_asset" class="card-link">Export products</a>
 			</div>
 		</div>
-		<div class="panel panel-default">
-			<div class="panel-heading">List Collections</div>
+		<div class="panel panel-default" id="exportProducts">
+			<div class="panel-heading">Get 20 products from the first 5 categories</div>
 			<div class="panel-body">
-				<a href="#" onclick="getCollections()" class="nav-link">Get Collections</a>
+				<a href="#" onclick="getProducts()" class="nav-link">RUN</a>
 			</div>
 		</div>
 	</div>

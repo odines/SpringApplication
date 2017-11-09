@@ -18,5 +18,4 @@ public class WebHookController {
 		String output = "POST:Jersey say : " + msg;
 		return Response.ok().entity(output).build();
 	}
-
 }
