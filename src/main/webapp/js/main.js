@@ -26,6 +26,23 @@ function getProducts() {
 	});
 }
 
+function exportToZip() {
+	$("#exportZip").removeClass("panel-success").addClass("panel-default");
+	$.ajax({
+		type: "GET",
+		dataType: "json",
+		url: "/export_zip",
+		success: function (result) {
+			if (result) {
+				$("#exportZip").addClass("panel-success");
+			}
+			console.log(result);
+		}
+
+	});
+}
+
+
 function processAuthTokenResult(result) {
 	if (result) {
 		$("#auth_panel").removeClass("panel-default").addClass("panel-success")

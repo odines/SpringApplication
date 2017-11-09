@@ -36,6 +36,12 @@
 				<a href="#" onclick="getProducts()" class="nav-link">RUN</a>
 			</div>
 		</div>
+		<div class="panel panel-default" id="exportZip">
+			<div class="panel-heading">Export items to ZIP archive</div>
+			<div class="panel-body">
+				<a href="#" onclick="exportToZip()" class="nav-link">RUN</a>
+			</div>
+		</div>
 	</div>
 </div>
 <script src="../js/jquery-3.2.1.min.js"></script>

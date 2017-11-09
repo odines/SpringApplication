@@ -1,6 +1,7 @@
 package vsg.rest.service;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.glassfish.jersey.client.JerseyClient;
@@ -14,8 +15,10 @@ import org.springframework.stereotype.Service;
 import vsg.rest.settings.AuthData;
 import vsg.rest.task.GetProductsCallable;
 
+import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -32,6 +35,7 @@ public class ExportAssetsService {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ExportAssetsService.class);
 	private static final String URI_EXPORT = "https://ccadmin-z8ga.oracleoutsourcing.com/ccadminui/v1/asset/export";
 	private static final String URI_COLLECTIONS = "https://ccadmin-z8ga.oracleoutsourcing.com/ccadminui/v1/collections";
+	private static final String URI_EXECUTE_EXPORT = "https://ccadmin-z8ga.oracleoutsourcing.com/ccadminui/v1/exportProcess";
 
 	@Autowired
 	public ExportAssetsService(AuthData pAuthData) {
@@ -55,6 +59,66 @@ public class ExportAssetsService {
 			LOGGER.error(response.getStatusInfo().getReasonPhrase());
 		}
 		return result;
+	}
+
+	public String getAlternativeExport() {
+		JerseyClient client = JerseyClientBuilder.createClient();
+		LOGGER.info("POST REQUEST: " + URI_EXECUTE_EXPORT);
+		JerseyInvocation.Builder builder = client.target(URI_EXECUTE_EXPORT)
+				.request(MediaType
+						.APPLICATION_JSON).header("Authorization", "Bearer " + authData.getAuthToken()).header
+						("Accept-Encoding", "gzip").header("Content-Encoding", "deflate");
+		Response response = builder.post(getExportPostEntity());
+		String result = null;
+		if (response.getStatus() == 200 || response.getStatus() == 202) {
+			result = extractProcessIdFromResponse(response.readEntity(String.class));
+			LOGGER.info("EXPORT COMPLETE. RESULT = " + result);
+			String exportURI = MessageFormat.format("https://ccadmin-z8ga.oracleoutsourcing.com/ccadminui/v1/exportProcess/{0}",
+					result);
+			LOGGER.info("GET REQUEST: " + exportURI);
+			JerseyInvocation.Builder exportBuilder = client.target(exportURI).request(MediaType.APPLICATION_JSON).header
+					("Authorization",
+							"Bearer " + authData
+									.getAuthToken());
+			try {
+				Thread.sleep(5000);
+			} catch (InterruptedException pE) {
+				LOGGER.error("InterruptedException: " + pE.getMessage());
+			}
+			Response exportResponse = exportBuilder.get();
+			if (exportResponse.getStatus() == 200) {
+				LOGGER.info("EXPORT RESPONSE = " + exportResponse.readEntity(String.class));
+			}
+		} else {
+			LOGGER.error(response.getStatusInfo().getReasonPhrase());
+		}
+		return result;
+	}
+
+	private String extractProcessIdFromResponse(String responseString) {
+		Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+		JsonObject json = gson.fromJson(responseString, JsonObject.class);
+		return json.get("processId").toString().replaceAll("\"", "");
+
+	}
+
+
+	private Entity<String> getExportPostEntity() {
+
+		JsonObject entity = new JsonObject();
+		entity.addProperty("fileName", "testExport.zip");
+		JsonArray jsonArray = new JsonArray();
+		JsonObject exportType1 = new JsonObject();
+		exportType1.addProperty("format", "csv");
+		exportType1.addProperty("id", "Profiles");
+
+		JsonObject exportType2 = new JsonObject();
+		exportType2.addProperty("format", "json");
+		exportType2.addProperty("id", "Products");
+		jsonArray.add(exportType1);
+		jsonArray.add(exportType2);
+		entity.add("items", jsonArray);
+		return Entity.entity(entity.toString(), MediaType.APPLICATION_JSON);
 	}
 
 	private Map<String, String> getCategories() {

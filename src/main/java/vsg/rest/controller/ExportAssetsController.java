@@ -30,5 +30,11 @@ public class ExportAssetsController {
 		return exportAssetsService.getProducts().toString();
 	}
 
+	@GET
+	@RequestMapping(value = "/export_zip", produces = MediaType.APPLICATION_JSON)
+	public String getExportToZop() {
+		return exportAssetsService.getAlternativeExport();
+	}
+
 
 }
