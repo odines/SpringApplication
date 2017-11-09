@@ -50,7 +50,6 @@ public class ExportAssetsService {
 		String result = null;
 		if (response.getStatus() == 200) {
 			result = response.readEntity(String.class);
-
 			LOGGER.info("EXPORT COMPLETE. ExportStatus:" + response.getStatus());
 		} else {
 			LOGGER.error(response.getStatusInfo().getReasonPhrase());
