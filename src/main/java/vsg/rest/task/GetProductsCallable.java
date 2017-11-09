@@ -27,18 +27,18 @@ public class GetProductsCallable implements Callable<String> {
 	@Override
 	public String call() throws Exception {
 		JerseyClient client = JerseyClientBuilder.createClient();
-		String result = null;
 		LOGGER.info("GET REQUEST: " + URI_PRODUCTS);
 		JerseyInvocation.Builder builder = client.target(URI_PRODUCTS).queryParam("categoryId", categoryId).queryParam
 				("limit", "20").request
 				(MediaType
 						.APPLICATION_JSON).header("Authorization", "Bearer " + authToken);
 		Response response = builder.get();
+		String result;
 		if (response.getStatus() == 200) {
 			LOGGER.info("EXPORT COMPLETE. ExportStatus:" + response.getStatus());
 			result = response.readEntity(String.class);
 		} else {
-			LOGGER.error(response.getStatusInfo().getReasonPhrase());
+			throw new RuntimeException(response.getStatusInfo().getReasonPhrase());
 		}
 		return result;
 	}

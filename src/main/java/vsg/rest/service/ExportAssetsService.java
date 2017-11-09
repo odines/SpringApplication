@@ -58,7 +58,7 @@ public class ExportAssetsService {
 		return result;
 	}
 
-	public Map<String, String> getCategories() {
+	private Map<String, String> getCategories() {
 		JerseyClient client = JerseyClientBuilder.createClient();
 		Map<String, String> result = new HashMap<>();
 		LOGGER.info("GET REQUEST: " + URI_COLLECTIONS);
@@ -69,9 +69,35 @@ public class ExportAssetsService {
 			LOGGER.info("EXPORT COMPLETE. ExportStatus:" + response.getStatus());
 			result = convertJSONToCollections(response.readEntity(String.class));
 		} else {
+			//throw new RuntimeException(response.getStatusInfo().getReasonPhrase())
 			LOGGER.error(response.getStatusInfo().getReasonPhrase());
 		}
 		return result;
+	}
+
+	public JsonObject getProducts() {
+		ThreadFactory factory = new ThreadFactoryBuilder().setNameFormat("getProducts-%d").build();
+		ExecutorService threadPool = Executors.newFixedThreadPool(5, factory);
+		List<Callable<String>> tasksList = getCallableTasksList();
+		List<Future<String>> resultList = null;
+		try {
+			resultList = threadPool.invokeAll(tasksList);
+			threadPool.shutdown();
+			while (!threadPool.isTerminated()) {
+				//threadPool.awaitTermination(10, TimeUnit.SECONDS);
+				LOGGER.info("Wait for termination ...");
+			}
+		} catch (InterruptedException pE) {
+			LOGGER.error("Exception in ThreadPool: e = " + pE.getMessage());
+		} finally {
+			threadPool.shutdown();
+		}
+		JsonObject resultProductsObject = null;
+		if (threadPool.isTerminated()) {
+			LOGGER.info("ThreadPool was terminated");
+			resultProductsObject = aggregateProducts(resultList);
+		}
+		return resultProductsObject == null ? new JsonObject() : resultProductsObject;
 	}
 
 	private Map<String, String> convertJSONToCollections(String inputJson) {
@@ -93,30 +119,6 @@ public class ExportAssetsService {
 		return collectionMap;
 	}
 
-
-	public JsonObject getProducts() {
-		ThreadFactory factory = new ThreadFactoryBuilder().setNameFormat("getProducts-%d").build();
-		ExecutorService threadPool = Executors.newFixedThreadPool(5, factory);
-		Map<String, String> categoriesMap = getCategories();
-		List<Callable<String>> tasksList = new ArrayList<>();
-		for (Map.Entry entry : categoriesMap.entrySet()) {
-			String categoryId = (String) entry.getKey();
-			tasksList.add(new GetProductsCallable(categoryId, authData.getAuthToken()));
-		}
-		List<Future<String>> resultList = null;
-		JsonObject resultProductsObject = null;
-		try {
-			resultList = threadPool.invokeAll(tasksList);
-		} catch (InterruptedException pE) {
-			LOGGER.error("Exception in ThreadPool: e = " + pE.getMessage());
-		} finally {
-			threadPool.shutdown();
-		}
-		resultProductsObject = aggregateProducts(resultList);
-
-		return resultProductsObject == null ? new JsonObject() : resultProductsObject;
-	}
-
 	private JsonObject aggregateProducts(List<Future<String>> futureList) {
 		JsonArray resultProductsArray = new JsonArray();
 		for (Future<String> future : futureList) {
@@ -134,8 +136,17 @@ public class ExportAssetsService {
 		return result;
 	}
 
-	private JsonArray getProductsFromJson(String json) {
+	private List<Callable<String>> getCallableTasksList() {
+		Map<String, String> categoriesMap = getCategories();
+		List<Callable<String>> tasksList = new ArrayList<>();
+		for (Map.Entry entry : categoriesMap.entrySet()) {
+			String categoryId = (String) entry.getKey();
+			tasksList.add(new GetProductsCallable(categoryId, authData.getAuthToken()));
+		}
+		return tasksList;
+	}
 
+	private JsonArray getProductsFromJson(String json) {
 		Gson gson = new Gson();
 		JsonObject productsJsonObject = gson.fromJson(json, JsonObject.class);
 		JsonArray productsArray = new JsonArray();
