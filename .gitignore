@@ -25,6 +25,7 @@ hs_err_pid*
 .gradle/
 .idea/inspectionProfiles/
 .idea/workspace.xml
+.idea/artifacts/
 build/resources/
 build/tmp/
 out/production/resources/
