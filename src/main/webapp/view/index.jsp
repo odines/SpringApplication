@@ -41,7 +41,7 @@
 		<div class="panel panel-default" id="exportZip">
 			<div class="panel-heading">Export items to ZIP archive</div>
 			<div class="panel-body">
-				<a href="#" onclick="exportToZip()" class="nav-link">RUN</a>
+				<a href="/export_zip"  class="nav-link">RUN</a>
 			</div>
 		</div>
 	</div>

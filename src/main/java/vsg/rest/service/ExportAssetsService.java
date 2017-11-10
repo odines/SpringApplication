@@ -1,9 +1,6 @@
 package vsg.rest.service;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
+import com.google.gson.*;
 import org.glassfish.jersey.client.JerseyClient;
 import org.glassfish.jersey.client.JerseyClientBuilder;
 import org.glassfish.jersey.client.JerseyInvocation;
@@ -12,12 +9,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import vsg.rest.settings.AuthData;
 import vsg.rest.task.GetProductsCallable;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.io.InputStream;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,6 +35,8 @@ public class ExportAssetsService {
 	private static final String URI_EXPORT = "https://ccadmin-z8ga.oracleoutsourcing.com/ccadminui/v1/asset/export";
 	private static final String URI_COLLECTIONS = "https://ccadmin-z8ga.oracleoutsourcing.com/ccadminui/v1/collections";
 	private static final String URI_EXECUTE_EXPORT = "https://ccadmin-z8ga.oracleoutsourcing.com/ccadminui/v1/exportProcess";
+	private static final String URI_EXECUTE_EXPORT_PARAM = "https://ccadmin-z8ga.oracleoutsourcing" +
+			".com/ccadminui/v1/exportProcess/{0}";
 
 	@Autowired
 	public ExportAssetsService(AuthData pAuthData) {
@@ -61,38 +62,90 @@ public class ExportAssetsService {
 		return result;
 	}
 
-	public String getAlternativeExport() {
+	public InputStream getAlternativeExport() {
 		JerseyClient client = JerseyClientBuilder.createClient();
-		LOGGER.info("POST REQUEST: " + URI_EXECUTE_EXPORT);
-		JerseyInvocation.Builder builder = client.target(URI_EXECUTE_EXPORT)
-				.request(MediaType
-						.APPLICATION_JSON).header("Authorization", "Bearer " + authData.getAuthToken()).header
-						("Accept-Encoding", "gzip").header("Content-Encoding", "deflate");
-		Response response = builder.post(getExportPostEntity());
-		String result = null;
-		if (response.getStatus() == 200 || response.getStatus() == 202) {
-			result = extractProcessIdFromResponse(response.readEntity(String.class));
-			LOGGER.info("EXPORT COMPLETE. RESULT = " + result);
-			String exportURI = MessageFormat.format("https://ccadmin-z8ga.oracleoutsourcing.com/ccadminui/v1/exportProcess/{0}",
-					result);
-			LOGGER.info("GET REQUEST: " + exportURI);
-			JerseyInvocation.Builder exportBuilder = client.target(exportURI).request(MediaType.APPLICATION_JSON).header
-					("Authorization",
-							"Bearer " + authData
-									.getAuthToken());
+		Response executeExportResponse = executePostRequest(client, URI_EXECUTE_EXPORT, getExportPostEntity());
+		InputStream result = null;
+		if (isValidResponse(executeExportResponse)) {
+			String processId = extractProcessIdFromResponse(executeExportResponse.readEntity(String.class));
+			LOGGER.info("EXPORT COMPLETE. RESULT = " + processId);
 			try {
+				LOGGER.info("Waiting for completion of export ....");
 				Thread.sleep(5000);
 			} catch (InterruptedException pE) {
 				LOGGER.error("InterruptedException: " + pE.getMessage());
 			}
-			Response exportResponse = exportBuilder.get();
-			if (exportResponse.getStatus() == 200) {
-				LOGGER.info("EXPORT RESPONSE = " + exportResponse.readEntity(String.class));
+			String exportURI = MessageFormat.format(URI_EXECUTE_EXPORT_PARAM,
+					processId);
+			Response exportResponse = executeGetRequest(client, exportURI);
+			if (isValidResponse(exportResponse)) {
+				String archiveUri = extractUrlFromResponse(exportResponse.readEntity(String.class));
+				if (!StringUtils.isEmpty(archiveUri)) {
+					LOGGER.info("GET REQUEST: " + archiveUri);
+					Response archiveResponse = executeGetRequest(client, archiveUri);
+					if (isValidResponse(archiveResponse)) {
+						result = archiveResponse.readEntity(InputStream.class);
+					}
+				}
 			}
-		} else {
-			LOGGER.error(response.getStatusInfo().getReasonPhrase());
 		}
 		return result;
+	}
+
+	private String extractUrlFromResponse(String responseString) {
+		LOGGER.info("EXPORT RESPONSE = " + responseString);
+		JsonObject responseJson = convertStringToJson(responseString);
+		String responseStatus = responseJson.getAsJsonPrimitive("completed").getAsString().replaceAll("\"", "");
+		String resultUri = null;
+		if (responseStatus.contains("true")) {
+			JsonArray linksArray = responseJson.getAsJsonArray("links");
+			if (!linksArray.isJsonNull()) {
+				for (JsonElement linkItem : linksArray) {
+					if (!linkItem.isJsonNull() && linkItem.isJsonObject()) {
+						JsonObject linkObject = linkItem.getAsJsonObject();
+						if (linkObject.getAsJsonPrimitive("rel").toString().contains("file")) {
+							resultUri = linkObject.getAsJsonPrimitive("href").getAsString();
+							LOGGER.info("EXTRACTED URI: " + resultUri);
+						}
+					}
+				}
+			}
+		}
+		return resultUri;
+	}
+
+	private Response executeGetRequest(JerseyClient client, String uri) {
+		LOGGER.info("GET REQUEST: " + uri);
+		JerseyInvocation.Builder builder = client.target(uri)
+				.request(MediaType.APPLICATION_JSON).header("Authorization", "Bearer " + authData.getAuthToken()).header
+						("Accept-Encoding", "gzip").header("Content-Encoding", "deflate");
+		return builder.get();
+	}
+
+	private boolean isValidResponse(final Response response) {
+		boolean result;
+		if (null != response) {
+			Response.StatusType responseStatus = response.getStatusInfo();
+			if (responseStatus.equals(Response.Status.OK) || responseStatus.equals(Response.Status.ACCEPTED)) {
+				LOGGER.info("Request was successfully sent. ResponseStatus = " + responseStatus);
+				result = true;
+			} else {
+				result = false;
+				LOGGER.error("ResponseStatus is not valid. Reason: " + response.getStatusInfo().getReasonPhrase());
+			}
+		} else {
+			result = false;
+		}
+		return result;
+	}
+
+	private Response executePostRequest(JerseyClient client, String uri, Entity<String> postEntity) {
+		LOGGER.info("POST REQUEST: " + uri);
+		JerseyInvocation.Builder builder = client.target(uri)
+				.request(MediaType
+						.APPLICATION_JSON).header("Authorization", "Bearer " + authData.getAuthToken()).header
+						("Accept-Encoding", "gzip").header("Content-Encoding", "deflate");
+		return builder.post(postEntity);
 	}
 
 	private String extractProcessIdFromResponse(String responseString) {
@@ -164,8 +217,7 @@ public class ExportAssetsService {
 	}
 
 	private Map<String, String> convertJSONToCollections(String inputJson) {
-		Gson gson = new Gson();
-		JsonObject json = gson.fromJson(inputJson, JsonObject.class);
+		JsonObject json = convertStringToJson(inputJson);
 		Map<String, String> collectionMap = new HashMap<>();
 		if (!json.isJsonNull()) {
 			JsonArray collectionItems = json.getAsJsonArray("items");
@@ -210,13 +262,17 @@ public class ExportAssetsService {
 	}
 
 	private JsonArray getProductsFromJson(String json) {
-		Gson gson = new Gson();
-		JsonObject productsJsonObject = gson.fromJson(json, JsonObject.class);
+		JsonObject productsJsonObject = convertStringToJson(json);
 		JsonArray productsArray = new JsonArray();
 		if (!productsJsonObject.isJsonNull()) {
 			productsArray = productsJsonObject.getAsJsonArray("items");
 		}
 		return productsArray;
+	}
+
+	private JsonObject convertStringToJson(String inputString) {
+		Gson gson = new Gson();
+		return gson.fromJson(inputString, JsonObject.class);
 	}
 
 

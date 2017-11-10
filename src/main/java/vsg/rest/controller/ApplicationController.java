@@ -54,4 +54,19 @@ public class ApplicationController {
 			response.setStatus(HttpServletResponse.SC_NO_CONTENT);
 		}
 	}
+
+	@RequestMapping(value = "/export_zip", produces = "application/zip")
+	public void getExportToZop(HttpServletResponse response) {
+		InputStream is = exportAssetsService.getAlternativeExport();
+		try {
+			//response.setContentType("application/zip");
+			response.setHeader("Content-Disposition", "attachment; filename=\"testExport.zip\"");
+			response.setStatus(HttpServletResponse.SC_OK);
+			IOUtils.copy(is, response.getOutputStream());
+			response.flushBuffer();
+		} catch (IOException pE) {
+			LOGGER.error("Cannot write file to outputStream. Exception: ", pE);
+		}
+	}
 }
+

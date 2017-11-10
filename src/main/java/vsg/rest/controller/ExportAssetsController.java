@@ -17,7 +17,6 @@ import javax.ws.rs.core.MediaType;
 public class ExportAssetsController {
 
 	private final ExportAssetsService exportAssetsService;
-	private static final Logger LOGGER = LoggerFactory.getLogger(ExportAssetsController.class);
 
 	@Autowired
 	public ExportAssetsController(ExportAssetsService pExportAssetsService) {
@@ -29,12 +28,4 @@ public class ExportAssetsController {
 	public String getListCollections() {
 		return exportAssetsService.getProducts().toString();
 	}
-
-	@GET
-	@RequestMapping(value = "/export_zip", produces = MediaType.APPLICATION_JSON)
-	public String getExportToZop() {
-		return exportAssetsService.getAlternativeExport();
-	}
-
-
 }
