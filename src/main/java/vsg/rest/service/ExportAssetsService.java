@@ -81,7 +81,6 @@ public class ExportAssetsService {
 			if (isValidResponse(exportResponse)) {
 				String archiveUri = extractUrlFromResponse(exportResponse.readEntity(String.class));
 				if (!StringUtils.isEmpty(archiveUri)) {
-					LOGGER.info("GET REQUEST: " + archiveUri);
 					Response archiveResponse = executeGetRequest(client, archiveUri);
 					if (isValidResponse(archiveResponse)) {
 						result = archiveResponse.readEntity(InputStream.class);
